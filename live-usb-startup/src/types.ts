@@ -33,10 +33,17 @@ export type Config = {
     memory: string,
     vram: string,
     vtxux: string,
+    wifiAuth?: { ssid: string, password: string }
 }
 
+export type WifiAuth = { ssid: string, password: string }
+
 export type Ctx = {
-    vmConfig: Config
+    config: Config
+    wifiAuth?: WifiAuth
+    hasWifi: boolean,
+    wifiIsConnected: boolean,
+    netIsUp: boolean
 }
 
 export type Graphics = {
