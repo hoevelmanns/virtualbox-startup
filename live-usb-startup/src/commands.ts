@@ -1,4 +1,4 @@
-import {spawnSync} from 'child_process'
+import {exec, execSync, spawnSync} from 'child_process'
 import {Config, ConfigValues, CpuInfo, Ctx, Graphics, Machines, Memory, NetworkInterface, WifiAuth} from './types'
 import {Systeminformation} from "systeminformation"
 import WifiNetworkData = Systeminformation.WifiNetworkData
@@ -39,7 +39,7 @@ export const getWifiNetworks = (): Promise<any> =>
 export const vmExists = (vm: string, machines: Machines) =>
     Object.values(machines).filter(m => m.name === vm).length > 0
 
-export const startVm = (vm: string) => spawnSync('VBoxManage', ['startvm', vm])
+export const startVm = (vm: string) => execSync(`VBoxManage startvm ${vm}`)
 
 export const setExtraDataConfig = (vm: string, config: ConfigValues) =>
     Object.entries(config).map(([name, value]) => setExtraData(vm, name, value.toString()))

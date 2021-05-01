@@ -83992,7 +83992,7 @@ const setExtraData = (vm, name, value) => (0,external_child_process_.spawnSync)(
 const activeNetworkInterface = () => sysinfo.networkInterfaces().then((interfaces) => interfaces.find((i) => i.operstate === 'up'));
 const getWifiNetworks = () => sysinfo.wifiNetworks().then((wifis) => wifis.map(w => w.ssid));
 const vmExists = (vm, machines) => Object.values(machines).filter(m => m.name === vm).length > 0;
-const startVm = (vm) => (0,external_child_process_.spawnSync)('VBoxManage', ['startvm', vm]);
+const startVm = (vm) => (0,external_child_process_.execSync)(`VBoxManage startvm ${vm}`);
 const setExtraDataConfig = (vm, config) => Object.entries(config).map(([name, value]) => setExtraData(vm, name, value.toString()));
 const setupWifi = async (ctx, task) => wifi.scan().then(async (networks) => await task.prompt([
     {
