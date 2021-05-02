@@ -1,0 +1,18 @@
+[/]
+default='e79edcf0-bb90-4e94-821a-35809c2921cd'
+list=['b1dcc9dd-5262-4d8d-a863-c897e6d979b9', 'e79edcf0-bb90-4e94-821a-35809c2921cd']
+
+[:b1dcc9dd-5262-4d8d-a863-c897e6d979b9]
+default-size-columns=68
+
+[:e79edcf0-bb90-4e94-821a-35809c2921cd]
+background-color='rgb(0,0,0)'
+cell-height-scale=1.0
+cell-width-scale=1.0
+default-size-columns=69
+font='Ubuntu Mono 12'
+foreground-color='rgb(255,255,255)'
+use-system-font=false
+use-theme-colors=false
+use-theme-transparency=false
+visible-name='oddyc'

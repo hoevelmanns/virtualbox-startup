@@ -4,15 +4,19 @@ import {
     setExtraDataConfig, setupWifi,
     setVmHardware, startVm, sysinfo,
 } from './commands'
-import {Config, ConfigValues, Ctx} from './types'
+import {Config, ConfigValues, Ctx, LogoOptions} from './types'
 import chalk from "chalk"
 import delay from "delay"
 import {existsSync} from "fs"
 
-const vm = require('minimist')(process.argv.slice(2))['machine'] ?? 'ODDYC'
-const terminalLogo = "./terminal_logo.png"
+// ------------------ Custom Options
+const terminalLogo = "./logo.png"
+const logoOptions: LogoOptions = {width: '100%'}
 const appName = "ODDYC portable"
-const configFile = `./.oddyc-config.json`
+// ------------------ Custom Options
+
+const vm = require('minimist')(process.argv.slice(2))['machine'] ?? 'ODDYC'
+const vmConfigFile = `./.oddyc-config.json`
 const extraDataConfig: ConfigValues = {
     'GUI/StatusBar/Enabled': false,
     'GUI/Fullscreen': true,
@@ -24,7 +28,7 @@ const extraDataConfig: ConfigValues = {
 const start = new Listr([
     {
         title: 'Initialize',
-        task: (ctx: Ctx) => ctx.config = init(configFile)
+        task: (ctx: Ctx) => ctx.config = init(vmConfigFile)
     },
     {
         title: 'Check Network',
@@ -63,7 +67,7 @@ const start = new Listr([
     {
         title: `Save config`,
         enabled: (ctx: Ctx): boolean => ctx.netIsUp,
-        task: async (ctx: Ctx): Promise<void> => saveConfig(configFile, ctx.config)
+        task: async (ctx: Ctx): Promise<void> => saveConfig(vmConfigFile, ctx.config)
     },
     {
         title: 'Start the VM',
@@ -82,7 +86,7 @@ const start = new Listr([
 const terminalImage = require('terminal-image');
 
 (async () => {
-    existsSync(terminalLogo) && console.log(await terminalImage.file(terminalLogo));
+    existsSync(terminalLogo) && console.log(await terminalImage.file(terminalLogo, logoOptions ?? {}))
     console.log(require('boxen')(chalk.bold(appName), {padding: 1, borderStyle: 'bold', margin: {top: 2, bottom: 2}}))
 
     start.run()

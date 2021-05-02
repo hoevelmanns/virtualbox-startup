@@ -1,6 +1,13 @@
 export type Machine = { name: string, running: boolean }
 export type Machines = { [key: string]: Machine }
 export type ConfigValues = { [key: string]: any }
+
+export type LogoOptions = {
+    width?: string | number;
+    height?: string | number;
+    preserveAspectRatio?: boolean;
+}
+
 export type NetworkInterface = {
     iface: string,
     ifaceName: string,
@@ -29,9 +36,9 @@ export type CpuInfo = {
 export type Config = {
     netMacAddress: string,
     netInterface: string,
-    cpuCores: string,
-    memory: string,
-    vram: string,
+    cpuCores: number,
+    memory: number,
+    vram: number,
     vtxux: string,
     wifiAuth?: { ssid: string, password: string }
 }
@@ -52,4 +59,19 @@ export type Graphics = {
         vendor: string,
         vram: number,
     }]
+}
+
+export type OS = {
+    platform: string,
+    distro: string,
+    release: string,
+    codename: string,
+    kernel: string,
+    arch: string,
+    hostname: string,
+    fqdn: string,
+    codepage: string,
+    logofile: string,
+    hypervisor?: string
+
 }

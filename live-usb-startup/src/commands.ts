@@ -1,7 +1,14 @@
-import {exec, execSync, spawnSync} from 'child_process'
-import {Config, ConfigValues, CpuInfo, Ctx, Graphics, Machines, Memory, NetworkInterface, WifiAuth} from './types'
-import {Systeminformation} from "systeminformation"
-import WifiNetworkData = Systeminformation.WifiNetworkData
+import {execSync, spawnSync} from 'child_process'
+import {
+    Config,
+    ConfigValues,
+    CpuInfo,
+    Ctx,
+    Graphics,
+    NetworkInterface,
+    WifiAuth,
+    OS,
+} from './types'
 import delay from "delay"
 import chalk from "chalk"
 import {readJsonSync, writeJsonSync} from "fs-extra"
@@ -13,9 +20,9 @@ const wifi = require('node-wifi')
 
 const cpu: Promise<CpuInfo> = sysinfo.cpu()
 
-const memory: Promise<Memory> = sysinfo.mem()
-
 const graphics: Promise<Graphics> = sysinfo.graphics()
+
+const os: Promise<OS> = sysinfo.osInfo()
 
 const randomMacAddress = require('random-mac')().split(':').join('')
 
@@ -24,7 +31,7 @@ export const init = (configFile: string) => {
     return readJsonSync(configFile, {throws: false}) ?? {}
 }
 
-export const saveConfig = (configFile: string, config: Config) =>  writeJsonSync(configFile, config)
+export const saveConfig = (configFile: string, config: Config) => writeJsonSync(configFile, config)
 
 const setExtraData = (vm: string, name: string, value: string) =>
     spawnSync('VBoxManage', ['setextradata', vm, name, value]);
@@ -32,12 +39,6 @@ const setExtraData = (vm: string, name: string, value: string) =>
 export const activeNetworkInterface = () =>
     sysinfo.networkInterfaces().then((interfaces: NetworkInterface[]): NetworkInterface | undefined =>
         interfaces.find((i: any) => i.operstate === 'up'))
-
-export const getWifiNetworks = (): Promise<any> =>
-    sysinfo.wifiNetworks().then((wifis: WifiNetworkData[]) => wifis.map(w => w.ssid))
-
-export const vmExists = (vm: string, machines: Machines) =>
-    Object.values(machines).filter(m => m.name === vm).length > 0
 
 export const startVm = (vm: string) => execSync(`VBoxManage startvm ${vm}`)
 
@@ -69,24 +70,35 @@ export const setupWifi = async (ctx: Ctx, task: TaskWrapper<Ctx, never>) =>
                 throw new Error(chalk.red.bold('Wrong Wifi credentials'))
             })))
 
+const vmMemory = async (): Promise<number> => {
+    const memory = await sysinfo.mem()
+    const {total, available} = memory
+    const recommendedMem = total * 0.5 / Math.pow(1024, 2)
+    return Math.round(recommendedMem <= available ? recommendedMem : available * 0.7)
+}
+
 export const setVmHardware = async (vm: string, ctx: Ctx): Promise<Config> => {
     const config = {
         netMacAddress: ctx.config.netMacAddress ?? randomMacAddress,
         netInterface: (await activeNetworkInterface())?.iface ?? 'unknown',
-        cpuCores: ((await cpu).cores / 2).toString(),
+        cpuCores: ((await cpu).cores / 2),
         vtxux: ((await cpu)).virtualization ? 'on' : 'off',
-        memory: Math.round(((await memory)).available * 0.9 / (1024 * 1024)).toString(),
-        vram: Math.round(((await graphics)).controllers[0].vram).toString(),
-        wifiAuth: ctx.wifiAuth
+        memory: (await vmMemory()),
+        vram: Math.round(((await graphics)).controllers[0].vram),
+        wifiAuth: ctx.wifiAuth,
     }
 
     spawnSync('VBoxManage', ['modifyvm', vm,
         '--nic1', 'bridged', '--nictype1', '82545EM', '--bridgeadapter1', config.netInterface,
         '--macaddress1', config.netMacAddress,
-        '--cpus', config.cpuCores,
-        '--memory', config.memory,
-        '--vram', config.vram,
-        '--vtxux', config.vtxux
+        '--cpus', config.cpuCores.toString(),
+        '--memory', config.memory.toString(),
+        '--vram', config.vram.toString(),
+        '--vtxux', config.vtxux,
+        '--nestedpaging', config.vtxux,
+        '--pae', config.vtxux,
+        '--paravirtprovider', (await (os))?.hypervisor ? 'hyperv' : 'default',
+        '--accelerate3d', 'on' // The Guest Additions must be installed
     ])
     return config
 }

@@ -26,10 +26,11 @@
   "scripts": {
     "dev": "npm run build -- -w",
     "build": "ncc build ./src/index.ts -o ./dist",
+    "copy": "sudo cp dist/bin/vmstarter /media/marcelle.hoevelmanns/writable/upper/home/ubuntu && sudo cp logo.png /media/marcelle.hoevelmanns/writable/upper/home/ubuntu",
     "build:linux": "npm run build:exec latest-linux-x64 && npm run chmod",
     "build:win": "npm run build:exec latest-win-x64",
     "build:mac": "npm run build:exec latest-macos-x64",
-    "build:exec": "npm run build && pkg dist/index.js --output dist/bin/vmsetup --target",
+    "build:exec": "npm run build && pkg dist/index.js --output dist/bin/vmstarter --target",
     "build:all": "npm run build && npm run build:linux && npm run build:mac && npm run build:win",
     "chmod": "chmod +x dist/bin/*"
   }

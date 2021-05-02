@@ -83979,8 +83979,8 @@ var lib = __nccwpck_require__(76587);
 const sysinfo = __nccwpck_require__(70068);
 const wifi = __nccwpck_require__(19909);
 const cpu = sysinfo.cpu();
-const memory = sysinfo.mem();
 const graphics = sysinfo.graphics();
+const os = sysinfo.osInfo();
 const randomMacAddress = __nccwpck_require__(15210)().split(':').join('');
 const init = (configFile) => {
     var _a;
@@ -83990,8 +83990,6 @@ const init = (configFile) => {
 const saveConfig = (configFile, config) => (0,lib.writeJsonSync)(configFile, config);
 const setExtraData = (vm, name, value) => (0,external_child_process_.spawnSync)('VBoxManage', ['setextradata', vm, name, value]);
 const activeNetworkInterface = () => sysinfo.networkInterfaces().then((interfaces) => interfaces.find((i) => i.operstate === 'up'));
-const getWifiNetworks = () => sysinfo.wifiNetworks().then((wifis) => wifis.map(w => w.ssid));
-const vmExists = (vm, machines) => Object.values(machines).filter(m => m.name === vm).length > 0;
 const startVm = (vm) => (0,external_child_process_.execSync)(`VBoxManage startvm ${vm}`);
 const setExtraDataConfig = (vm, config) => Object.entries(config).map(([name, value]) => setExtraData(vm, name, value.toString()));
 const setupWifi = async (ctx, task) => wifi.scan().then(async (networks) => await task.prompt([
@@ -84016,24 +84014,33 @@ const setupWifi = async (ctx, task) => wifi.scan().then(async (networks) => awai
     ctx.netIsUp = false;
     throw new Error(source_default().red.bold('Wrong Wifi credentials'));
 })));
+const vmMemory = async () => {
+    const memory = await sysinfo.mem();
+    const { total, available } = memory;
+    const recommendedMem = total * 0.5 / Math.pow(1024, 2);
+    return Math.round(recommendedMem <= available ? recommendedMem : available * 0.7);
+};
 const setVmHardware = async (vm, ctx) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const config = {
         netMacAddress: (_a = ctx.config.netMacAddress) !== null && _a !== void 0 ? _a : randomMacAddress,
         netInterface: (_c = (_b = (await activeNetworkInterface())) === null || _b === void 0 ? void 0 : _b.iface) !== null && _c !== void 0 ? _c : 'unknown',
-        cpuCores: ((await cpu).cores / 2).toString(),
+        cpuCores: ((await cpu).cores / 2),
         vtxux: ((await cpu)).virtualization ? 'on' : 'off',
-        memory: Math.round(((await memory)).available * 0.9 / (1024 * 1024)).toString(),
-        vram: Math.round(((await graphics)).controllers[0].vram).toString(),
-        wifiAuth: ctx.wifiAuth
+        memory: (await vmMemory()),
+        vram: Math.round(((await graphics)).controllers[0].vram),
+        wifiAuth: ctx.wifiAuth,
     };
     (0,external_child_process_.spawnSync)('VBoxManage', ['modifyvm', vm,
         '--nic1', 'bridged', '--nictype1', '82545EM', '--bridgeadapter1', config.netInterface,
         '--macaddress1', config.netMacAddress,
-        '--cpus', config.cpuCores,
-        '--memory', config.memory,
-        '--vram', config.vram,
-        '--vtxux', config.vtxux
+        '--cpus', config.cpuCores.toString(),
+        '--memory', config.memory.toString(),
+        '--vram', config.vram.toString(),
+        '--vtxux', config.vtxux,
+        '--nestedpaging', config.vtxux,
+        '--pae', config.vtxux,
+        '--paravirtprovider', ((_d = (await (os))) === null || _d === void 0 ? void 0 : _d.hypervisor) ? 'hyperv' : 'default', '--accelerate3d', 'on' // The Guest Additions must be installed
     ]);
     return config;
 };
@@ -84047,10 +84054,13 @@ var _a;
 
 
 
-const vm = (_a = __nccwpck_require__(61647)(process.argv.slice(2))['machine']) !== null && _a !== void 0 ? _a : 'ODDYC';
-const terminalLogo = "./terminal_logo.png";
+// ------------------ Custom Options
+const terminalLogo = "./logo.png";
+const logoOptions = { width: '100%' };
 const appName = "ODDYC portable";
-const configFile = `./.oddyc-config.json`;
+// ------------------ Custom Options
+const vm = (_a = __nccwpck_require__(61647)(process.argv.slice(2))['machine']) !== null && _a !== void 0 ? _a : 'ODDYC';
+const vmConfigFile = `./.oddyc-config.json`;
 const extraDataConfig = {
     'GUI/StatusBar/Enabled': false,
     'GUI/Fullscreen': true,
@@ -84061,7 +84071,7 @@ const extraDataConfig = {
 const start = new dist.Listr([
     {
         title: 'Initialize',
-        task: (ctx) => ctx.config = init(configFile)
+        task: (ctx) => ctx.config = init(vmConfigFile)
     },
     {
         title: 'Check Network',
@@ -84097,7 +84107,7 @@ const start = new dist.Listr([
     {
         title: `Save config`,
         enabled: (ctx) => ctx.netIsUp,
-        task: async (ctx) => saveConfig(configFile, ctx.config)
+        task: async (ctx) => saveConfig(vmConfigFile, ctx.config)
     },
     {
         title: 'Start the VM',
@@ -84114,7 +84124,7 @@ const start = new dist.Listr([
 ], { exitOnError: false });
 const terminalImage = __nccwpck_require__(59457);
 (async () => {
-    (0,external_fs_.existsSync)(terminalLogo) && console.log(await terminalImage.file(terminalLogo));
+    (0,external_fs_.existsSync)(terminalLogo) && console.log(await terminalImage.file(terminalLogo, logoOptions !== null && logoOptions !== void 0 ? logoOptions : {}));
     console.log(__nccwpck_require__(90901)(source_default().bold(appName), { padding: 1, borderStyle: 'bold', margin: { top: 2, bottom: 2 } }));
     start.run()
         .then(({ config }) => Object.keys(config).length > 0 && delay_default()(3000) && console.log([
