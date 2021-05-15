@@ -84077,9 +84077,11 @@ const start = new dist.Listr([
         title: 'Check Network',
         task: async (ctx, task) => {
             var _a, _b;
+            await delay_default()(2000);
             if ((_a = (await sysinfo.networkInterfaces())) === null || _a === void 0 ? void 0 : _a.find((i) => i.operstate === 'up')) {
                 return ctx.netIsUp = true;
             }
+            await delay_default()(2000);
             if (((_b = (await (sysinfo.wifiInterfaces()))) === null || _b === void 0 ? void 0 : _b.length) > 0) {
                 return ctx.hasWifi = true;
             }

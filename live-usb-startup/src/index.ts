@@ -34,9 +34,13 @@ const start = new Listr([
         title: 'Check Network',
         task: async (ctx: Ctx, task) => {
 
+            await delay(2000)
+
             if ((await sysinfo.networkInterfaces())?.find((i: any) => i.operstate === 'up')) {
                 return ctx.netIsUp = true
             }
+
+            await delay(2000)
 
             if ((await (sysinfo.wifiInterfaces()))?.length > 0) {
                 return ctx.hasWifi = true
